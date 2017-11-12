@@ -42,8 +42,16 @@ body {
     flex-grow: 1;
 }
 
-.barFixed {
+.barFixed4 {
     width: 24%;
+}
+
+.barFixed2 {
+    width: 49%;
+}
+
+.barFixed1 {
+    width: 99%;
 }
 
 .note-100 {
