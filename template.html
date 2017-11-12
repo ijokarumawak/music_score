@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="main.css">
+  <title>Template</title>
+</head>
+<body>
+
+<h1>Template</h1>
+
+<div id="controlPanel">
+  <div>
+    <label for="scoreScrollSpeed">Scroll Speed</label>
+    <input type="range" id="scoreScrollSpeed" min="1" value="5" max="10" step="1" oninput="setScoreScrollSpeed(value)">
+  </div>
+  
+  <div>
+    <label for="scoreFontSize">Font Size</label>
+    <input type="range" id="scoreFontSize" min="1" value="1" max="2" step="0.1" oninput="setScoreFontSize(value)">
+  </div>
+
+  <div>
+    Bar Width:
+    <button onClick="setBarClasses('bar')">Default</button>
+    <button onClick="setBarClasses('bar barFlex')">Flex</button>
+    <button onClick="setBarClasses('bar barFixed')">Fixed</button>
+  </div>
+</div>
+
+<div id="score" onClick="onClickScore()">
+</div>
+
+<script src="score.js"></script>
+<div id="scoreText" style="display:none">
+
+## Intro
+
+## Play as much as you want
+
+Ch |A|D|A|A|
+Ly |This is a|Template|For a music|Score|
+
+Ch |D|D|A|A|
+Ly |As easy as|Markdown format|You can write a|Score|
+X  |_|_|_|to end|
+
+Ch |E|D|A|E|
+Ly |Tap the screen and|it starts scrolling|Tap it again and as you expect it|... stops. Wow!|
+
+## Ending
+
+Ch |E|D|A|A|
+
+</div>
+<script>
+
+var score = parseScore(document.getElementById('scoreText').innerText);
+renderScore(score);
+
+</script>
+
+</body>
+</html>
+
