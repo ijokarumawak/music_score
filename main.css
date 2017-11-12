@@ -48,9 +48,11 @@ body {
 
 .note-100 {
     width: 100%;
+    min-width: 5em;
 }
 .note-50 {
     width: 50%;
+    min-width: 5em;
 }
 .note-25 {
     width: 25%;
@@ -69,7 +71,6 @@ body {
 
 .part-Ch {
     color: #1188F3;
-    min-width: 5em;
 }
 .part-Ly {
     color: #FBFBFB;
