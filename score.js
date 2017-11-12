@@ -3,9 +3,12 @@ var scrollingScore;
 var scoreScrollSpeed;
 var scoreFontSize;
 var scoreContainer = document.getElementById('score');
+var scoreContent;
 
-function Score(title) {
+function Score(title, scale) {
   this.title = title;
+  this.scale = scale;
+  this.transpose = 0;
   this.blocks = new Array();
 }
 
@@ -26,6 +29,22 @@ function Note(value, length) {
   this.value = value;
   // Length as percentage of a bar.
   this.length = length;
+  this.getDisplayValue = function() {
+    return this.value;
+  }
+}
+
+Note.prototype = new Note();
+
+function Chord(root, tone, on) {
+  Note.call(this, root + tone + (on ? '/' + on : ''));
+  this.root = root;
+  this.tone = tone;
+  this.on = on;
+  this.getDisplayValue = function() {
+    var t = transposeChord(score.scale, this, score.transpose);
+    return t.root + t.tone + (t.on ? '/' + t.on : '');
+  }
 }
 
 
@@ -62,6 +81,13 @@ function setScoreFontSize(n) {
 
 function setScoreScrollSpeed(n) {
   scoreScrollSpeed = 500 / n / scoreFontSize;
+}
+
+function setScoreKeyTranspose(offset) {
+  if (offset < -11 || offset > 11) return;
+  score.transpose = offset;
+  document.getElementById('scoreKeyTranspose').innerText = offset;
+  renderScore(score);
 }
 
 function loadScore(name) {
@@ -104,20 +130,102 @@ function parseBar(partName, barStr) {
   // C, Em
   var bar = new Bar();
   if ('Ch' === partName) {
-    var notes = barStr.split(',');
-    notes.map(n => new Note(n, 100 / notes.length)).forEach(n => bar.notes.push(n));
+    var chords = barStr.split(',');
+    chords.forEach(c => {
+      var chord = parseChord(c);
+      chord.length = 100 / chords.length;
+      bar.notes.push(chord);
+    });
   } else {
     bar.notes.push(new Note(barStr, 100));
   }
   return bar;
 }
 
-function renderScore(score) {
-  // TODO: remove existing children.
-  score.blocks.forEach((b, i) => renderBlock(scoreContainer, b, i));
+function parseChord(s) {
+  var onChord = s.split('/');
+  var chord = onChord[0];
+  var on = onChord[1];
+  var root = chord.charAt(0);
+  var accidental = chord.charAt(1);
+  var toneIndex = 1;
+  if ('#' === accidental || 'b' === accidental) {
+    root += accidental;
+    toneIndex = 2;
+  }
+  var tone = chord.substr(toneIndex);
+  
+  return new Chord(root, tone, on);
 }
 
-function renderBlock(scoreContainer, block, blockIdx) {
+// C, C#/Db, D, D#/Eb, E, F, F#/Gb, G, G#/Ab, A, A#/Bb, B
+var rootToNum = new Map([
+  ['C', 0],
+  ['C#', 1],
+  ['Db', 1],
+  ['D', 2],
+  ['D#', 3],
+  ['Eb', 3],
+  ['E', 4],
+  ['F', 5],
+  ['F#', 6],
+  ['Gb', 6],
+  ['G', 7],
+  ['G#', 8],
+  ['Ab', 8],
+  ['A', 9],
+  ['A#', 10],
+  ['Bb', 10],
+  ['B', 11]
+]);
+
+var numToRoot = new Map([
+  [0, 'C'],
+  [1, 'C#'],
+  [2, 'D'],
+  [3, 'D#'],
+  [4, 'E'],
+  [5, 'F'],
+  [6, 'F#'],
+  [7, 'G'],
+  [8, 'G#'],
+  [9, 'A'],
+  [10, 'A#'],
+  [11, 'B']
+]);
+
+
+// offset -11 0 11
+function transposeRoot(root, offset) {
+  if (!root) return undefined;
+  var num = rootToNum.get(root);
+  var transposedNum = (num + offset) % 12;
+  transposedNum = transposedNum < 0 ? transposedNum + 12 : transposedNum;
+  var transposedRoot = numToRoot.get(transposedNum);
+  return transposedRoot;
+}
+
+function transposeChord(baseScale, chord, offset) {
+  // TODO: pick the right accidental based on transposedBase.
+  var transposedBaseRoot = transposeRoot(baseScale.root, offset); 
+  var transposedChordRoot = transposeRoot(chord.root, offset); 
+
+  var transposedBase = new Chord(transposedBaseRoot, baseScale.tone, undefined);
+  var transposedChord = new Chord(transposedChordRoot, chord.tone, transposeRoot(chord.on, offset));
+  return transposedChord;
+}
+
+function renderScore(score) {
+  // remove existing children.
+  scoreContent = document.getElementById('scoreContent');
+  if (scoreContent) scoreContainer.removeChild(scoreContent);
+  scoreContent = document.createElement('div');
+  scoreContent.id = 'scoreContent';
+  scoreContainer.appendChild(scoreContent);
+  score.blocks.forEach((b, i) => renderBlock(scoreContent, b, i));
+}
+
+function renderBlock(scoreContent, block, blockIdx) {
 
   var maxBarLen = block.parts.map(part => part.bars.length).reduce((a, b) => Math.max(a, b));
   var blockContainer = document.createElement('div');
@@ -134,7 +242,7 @@ function renderBlock(scoreContainer, block, blockIdx) {
     blockContainer.appendChild(barContainers[i]);
   }
 
-  scoreContainer.appendChild(blockContainer);
+  scoreContent.appendChild(blockContainer);
   block.parts.forEach((p, i) => renderPart(barContainers, p, i));
 }
 
@@ -149,7 +257,7 @@ function renderBar(barContainer, partName, bar, barIdx, partIdx) {
   // partContainer.innerText = barIdx + '.' + partIdx + ':' + bar;
   bar.notes.forEach(n => {
     var noteDiv = document.createElement('div');
-    noteDiv.innerText = n.value;
+    noteDiv.innerText = n.getDisplayValue();
     noteDiv.className = 'note-' + n.length;
     partContainer.appendChild(noteDiv);
   });
